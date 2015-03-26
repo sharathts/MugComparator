@@ -4,13 +4,17 @@ import random
 
 FOLDER = "data"
 LIMIT = 10 #limits the number of images to be considered as part of the database
-SIZE = 200
+SIZE = 150
+TOTAL_NO_IMAGES = 300
 
-def mse(x, y):
+NAME = random.sample(range(1, TOTAL_NO_IMAGES), LIMIT)
+NAME = [str(i) for i in NAME]
+
+def mse(x, y, z):
     
-    """Find the mean absolute error between two column vectors x and y"""
+    """Find the mean absolute error between two column vectors x and y and add this to the mean absolute error between x and z"""
     
-    return sum([abs(x[i] - y[i]) for i in range(len(y))])
+    return sum([abs(x[i] - y[i]) + abs(x[i] - z[i]) for i in range(len(y))])
 
 def preprocess(image):
 
@@ -28,45 +32,61 @@ def normalize_and_flatten(image):
     image = image / 255.0 #For now, we apply a very naive method of normalization
     image = image.ravel()
     return image
-            
-data = np.zeros(shape=(LIMIT, SIZE*SIZE))
-images = []
 
-for imname in range(1, LIMIT + 1):
+def recognize_image(test_img, data, reinforce_data):
+    
+    """Given the test image return the index of 10 most similar hits"""
+    
+    global LIMIT
+    #Finds the least mse between test image and the dataset
+    pos = range(LIMIT) # contains the indices of all the images in the database
+    value = [] # will contain the mean square errors later
+    for i in range(len(pos)):
+        value.append(mse(test_img, data[i], reinforce_data[i]))
+        print i
+        if i == 0:
+            continue
+        k = i
+        while((value[k] < value[k - 1]) and k >= 0):
+            #swap positions
+            pos[k], pos[k - 1] = pos[k - 1], pos[k]
+            #swap values
+            value[k], value[k - 1] = value[k - 1], value[k]
+            k -= 1
+    return pos
+    
+def init():
 
-    img = cv2.imread(FOLDER + "/" + str(imname) + ".jpg")
-    img = preprocess(img)
-    images.append(img)
-    data[imname - 1] = normalize_and_flatten(img)
+    data = np.zeros(shape=(LIMIT, SIZE*SIZE))
+    images = []
+    for itr in range(LIMIT):
 
-print data
+        img = cv2.imread(FOLDER + "/" + NAME[itr] + ".jpg")
+        img = preprocess(img)
+        images.append(img)
+        data[itr - 1] = normalize_and_flatten(img)
+    
+    return [data, images]
 
+def display_results(images, pos):
+    
+    #Now pos will contain the indexes to images in ascending order of mse        
+    for i in range(10):
+        cv2.imshow(str(i + 1), images[pos[i]])
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
-#select random image to be test image
-test_img = cv2.imread(FOLDER + "/" + str(random.randint(1, LIMIT + 1)) + ".jpg")
-test_img = preprocess(test_img)
-cv2.imshow("test", test_img)
-test_img = normalize_and_flatten(test_img)
-
-#Finds the least mse between test image and the dataset
-pos = range(LIMIT)
-value = []
-for i in range(len(pos)):
-    value.append(mse(test_img, data[i]))
-    print i
-    if i == 0:
-        continue
-    k = i
-    while((value[k] < value[k - 1]) and k >= 0):
-        #swap positions
-        pos[k], pos[k - 1] = pos[k - 1], pos[k]
-        #swap values
-        value[k], value[k - 1] = value[k - 1], value[k]
-        k -= 1
-
-#Now pos will contain the indexes to images in ascending order of mse        
-print pos  
-for i in range(10):
-    cv2.imshow(str(i), images[pos[i]])
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+def main():
+    
+    data, images = init()
+    
+    #select random image to be test image
+    test_img = cv2.imread(FOLDER + "/" + str(random.randint(1, TOTAL_NO_IMAGES)) + ".jpg")
+    test_img = preprocess(test_img)
+    cv2.imshow("test", test_img)
+    test_img = normalize_and_flatten(test_img)
+    
+    reinforce_data = data
+    pos = recognize_image(test_img, data, reinforce_data)
+    display_results(images, pos)
+main()
