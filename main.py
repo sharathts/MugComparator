@@ -14,7 +14,7 @@ def mse(x, y, z):
     
     """Find the mean absolute error between two column vectors x and y and add z to this"""
     
-    return sum([abs(x[i] - y[i]) + z[i] for i in range(len(y))])
+    return sum([(abs(x[i] - y[i]) + z[i]) / (x[i] + z[i] + 0.1) for i in range(len(y))])
 
 def preprocess(image):
 
@@ -43,17 +43,18 @@ def recognize_image(test_img, data, reinforce_data):
     value = [] # will contain the mean square errors later
     for i in range(len(pos)):
         value.append(mse(test_img, data[i], reinforce_data[i]))
-        print i
+        print i,
         if i == 0:
             continue
         k = i
-        while((value[k] < value[k - 1]) and k >= 0):
+        while((value[k] < value[k - 1]) and k > 0):
             #swap positions
             pos[k], pos[k - 1] = pos[k - 1], pos[k]
             #swap values
             value[k], value[k - 1] = value[k - 1], value[k]
             k -= 1
-    return pos, max(value)
+    print
+    return pos, value
     
 def init():
 
@@ -78,18 +79,15 @@ def display_results(images, pos):
 
 def learn(test_img, data, reinforce_data, value, mismatch_list):
     
-    per_pix_error = value / SIZE * SIZE
-    print "learning now"
+    per_pix_error = value / (SIZE * SIZE)
+    print "learning now", per_pix_error
     for i in mismatch_list:
-        error = [abs(test_img - data[i][j]) for j in range(len(data[i]))]
-        print "computed the errors"
-#        error= [per_pix_error / (er + 0.1) for er in error]
+        error = [abs(test_img[j] - data[i][j]) for j in range(len(data[i]))]
+        error= [per_pix_error / (er + 0.1) for er in error]
         k = 0
-        for x in np.nditer(reinforce_data[i], op_flags=['readwrite']):
-            x[...] = error[k]
-            k += 1
+        for k in range(len(reinforce_data[i])):
+            reinforce_data[i][k] += error[k]
     return reinforce_data
-#    print reinforce_data[-1]
     
 def main():
     
@@ -101,9 +99,14 @@ def main():
     cv2.imshow("test", test_img)
     test_img = normalize_and_flatten(test_img)
     reinforce_data = np.zeros(shape=(LIMIT, SIZE*SIZE))
-    pos, value = recognize_image(test_img, data, reinforce_data)
-    print pos, value
-    reinforce_data = learn(test_img, data, reinforce_data, value, [1])
-    print reinforce_data
-    
+    i = 1
+    while i >= 0:
+        pos, value = recognize_image(test_img, data, reinforce_data)
+        print pos
+        print value
+        value.sort()
+        print value
+        reinforce_data = learn(test_img, data, reinforce_data, max(value), [pos[1]])
+#        print reinforce_data
+        i -= 1
 main()
