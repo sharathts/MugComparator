@@ -6,6 +6,7 @@ FOLDER = "data"
 LIMIT = 10 #limits the number of images to be considered as part of the database
 SIZE = 150
 TOTAL_NO_IMAGES = 300
+NO_SIMILAR = 5
 
 NAME = random.sample(range(1, TOTAL_NO_IMAGES), LIMIT)
 NAME = [str(i) for i in NAME]
@@ -14,7 +15,7 @@ def mse(x, y, z):
     
     """Find the mean absolute error between two column vectors x and y and add z to this"""
     
-    return sum([(abs(x[i] - y[i]) + z[i]) / (x[i] + z[i] + 0.1) for i in range(len(y))])
+    return sum([(abs(x[i] - y[i]) + z[i]) for i in range(len(y))])
 
 def preprocess(image):
 
@@ -99,14 +100,16 @@ def main():
     cv2.imshow("test", test_img)
     test_img = normalize_and_flatten(test_img)
     reinforce_data = np.zeros(shape=(LIMIT, SIZE*SIZE))
-    i = 1
+    i = 2
     while i >= 0:
         pos, value = recognize_image(test_img, data, reinforce_data)
+        pos = pos[0:NO_SIMILAR]
         print pos
         print value
         value.sort()
         print value
         reinforce_data = learn(test_img, data, reinforce_data, max(value), [pos[1]])
+        print "Next iter"
 #        print reinforce_data
         i -= 1
 main()
