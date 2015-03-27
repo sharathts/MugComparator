@@ -12,9 +12,9 @@ NAME = [str(i) for i in NAME]
 
 def mse(x, y, z):
     
-    """Find the mean absolute error between two column vectors x and y and add this to the mean absolute error between x and z"""
+    """Find the mean absolute error between two column vectors x and y and add z to this"""
     
-    return sum([abs(x[i] - y[i]) + abs(x[i] - z[i]) for i in range(len(y))])
+    return sum([abs(x[i] - y[i]) + z[i] for i in range(len(y))])
 
 def preprocess(image):
 
@@ -53,7 +53,7 @@ def recognize_image(test_img, data, reinforce_data):
             #swap values
             value[k], value[k - 1] = value[k - 1], value[k]
             k -= 1
-    return pos
+    return pos, max(value)
     
 def init():
 
@@ -76,6 +76,21 @@ def display_results(images, pos):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+def learn(test_img, data, reinforce_data, value, mismatch_list):
+    
+    per_pix_error = value / SIZE * SIZE
+    print "learning now"
+    for i in mismatch_list:
+        error = [abs(test_img - data[i][j]) for j in range(len(data[i]))]
+        print "computed the errors"
+#        error= [per_pix_error / (er + 0.1) for er in error]
+        k = 0
+        for x in np.nditer(reinforce_data[i], op_flags=['readwrite']):
+            x[...] = error[k]
+            k += 1
+    return reinforce_data
+#    print reinforce_data[-1]
+    
 def main():
     
     data, images = init()
@@ -85,8 +100,10 @@ def main():
     test_img = preprocess(test_img)
     cv2.imshow("test", test_img)
     test_img = normalize_and_flatten(test_img)
+    reinforce_data = np.zeros(shape=(LIMIT, SIZE*SIZE))
+    pos, value = recognize_image(test_img, data, reinforce_data)
+    print pos, value
+    reinforce_data = learn(test_img, data, reinforce_data, value, [1])
+    print reinforce_data
     
-    reinforce_data = data
-    pos = recognize_image(test_img, data, reinforce_data)
-    display_results(images, pos)
 main()
