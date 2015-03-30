@@ -3,16 +3,16 @@ import numpy as np
 import random
 
 FOLDER = "data"
-LIMIT = 300 #limits the number of images to be considered as part of the database
-SIZE = 200
-TOTAL_NO_IMAGES = 301
+LIMIT = 10 #limits the number of images to be considered as part of the database
+SIZE = 100
+
+TOTAL_NO_IMAGES = 300
 NO_SIMILAR = 5
 
 NAME = random.sample(range(1, TOTAL_NO_IMAGES), LIMIT)
 NAME = [str(i) for i in NAME]
-cascPath = ''
-#faceCascade = cv2.CascadeClassifier(cascPath)
-
+casc_path = 'lbpcascades/lbpcascade_frontalface.xml'#'haarcascades/haarcascade_frontalface_alt.xml'#
+face_cascade = cv2.CascadeClassifier(casc_path)
 
 def distance(x, y, z):
     
@@ -25,9 +25,13 @@ def preprocess(image):
     """Converts the image to gray scale and also resizes the image"""
     
     global SIZE
-    image = cv2.resize(image, (SIZE, SIZE))
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(image)
     
+    for (x,y,w,h) in faces:
+        image = image[y:y+h, x:x+w]
+    
+    image = cv2.resize(image, (SIZE, SIZE))
     return image
 
 def normalize_and_flatten(image):
@@ -111,6 +115,7 @@ def main():
     test_img = cv2.imread(FOLDER + "/" + str(random.randint(1, TOTAL_NO_IMAGES)) + ".jpg")
     test_img = preprocess(test_img)
     cv2.imshow("test", test_img)
+
     test_img = normalize_and_flatten(test_img)
     
     reinforce_data = np.zeros(shape=(LIMIT, SIZE*SIZE))
