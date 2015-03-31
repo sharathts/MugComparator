@@ -9,10 +9,13 @@ SIZE = 100
 TOTAL_NO_IMAGES = 300
 NO_SIMILAR = 5
 
+#SEED_VALUE = 13
+#random.seed(SEED_VALUE)
+
 NAME = random.sample(range(1, TOTAL_NO_IMAGES), LIMIT)
 NAME = [str(i) for i in NAME]
-casc_path = 'lbpcascades/lbpcascade_frontalface.xml'#'haarcascades/haarcascade_frontalface_alt.xml'#
-face_cascade = cv2.CascadeClassifier(casc_path)
+CASC_PATH = 'lbpcascades/lbpcascade_frontalface.xml'#'haarcascades/haarcascade_frontalface_alt.xml'#
+FACE_CASCADE = cv2.CascadeClassifier(CASC_PATH)
 
 def distance(x, y, z):
     
@@ -26,11 +29,13 @@ def preprocess(image):
     
     global SIZE
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(image)
+    faces = FACE_CASCADE.detectMultiScale(image)
     
     for (x,y,w,h) in faces:
         image = image[y:y+h, x:x+w]
     
+    if image is None or len(image) == 0:
+        return None
     image = cv2.resize(image, (SIZE, SIZE))
     return image
 
@@ -74,12 +79,16 @@ def init():
     
     data = np.zeros(shape=(LIMIT, SIZE*SIZE))
     images = []
+    k = 0
     for itr in range(LIMIT):
 
         img = cv2.imread(FOLDER + "/" + NAME[itr] + ".jpg")
         img = preprocess(img)
+        if img is None:
+            continue
         images.append(img)
-        data[itr - 1] = normalize_and_flatten(img)
+        data[k] = normalize_and_flatten(img)
+        k += 1
     
     return [data, images]
 
@@ -98,7 +107,6 @@ def learn(test_img, data, reinforce_data, value, mismatch_list):
     """Each pixel is penalized accordingly based on the error it made, this penalty is the core of the training process"""
     
     per_pix_error = value / (SIZE * SIZE)
-#    print "learning now", per_pix_error
     for i in mismatch_list:
         error = [abs(test_img[j] - data[i][j]) for j in range(len(data[i]))]
         error= [per_pix_error / (er + 0.1) for er in error]
@@ -114,6 +122,9 @@ def main():
     #select random image to be test image
     test_img = cv2.imread(FOLDER + "/" + str(random.randint(1, TOTAL_NO_IMAGES)) + ".jpg")
     test_img = preprocess(test_img)
+    if test_img is None:
+        print "Cannot recognize, no face found"
+        return
     cv2.imshow("test", test_img)
 
     test_img = normalize_and_flatten(test_img)
@@ -133,3 +144,4 @@ def main():
         i -= 1
         
 main()
+
