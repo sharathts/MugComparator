@@ -1,13 +1,16 @@
 import cv2
 import numpy as np
 import random
+import cPickle as pickle
+import os
 
 FOLDER = "data"
-LIMIT = 10 #limits the number of images to be considered as part of the database
+LIMIT = 100 #limits the number of images to be considered as part of the database
 SIZE = 100
 
 TOTAL_NO_IMAGES = 300
 NO_SIMILAR = 5
+MEMORY = 'memory_file.dat'
 
 #SEED_VALUE = 13
 #random.seed(SEED_VALUE)
@@ -59,7 +62,7 @@ def recognize_image(test_img, data, reinforce_data):
     
     for i in range(len(pos)):
         value.append(distance(test_img, data[i], reinforce_data[i]))
-        print i
+#        print i
         if i == 0:
             continue
         k = i
@@ -115,6 +118,10 @@ def learn(test_img, data, reinforce_data, value, mismatch_list):
             reinforce_data[i][k] += error[k]
     return reinforce_data
     
+def store_data(data):
+    
+    pickle.dump(data, open(MEMORY, 'wb'))
+
 def main():
     
     data, images = init()
@@ -123,24 +130,29 @@ def main():
     test_img = cv2.imread(FOLDER + "/" + str(random.randint(1, TOTAL_NO_IMAGES)) + ".jpg")
     test_img = preprocess(test_img)
     if test_img is None:
-        print "Cannot recognize, no face found"
+#        print "Cannot recognize, no face found"
         return
     cv2.imshow("test", test_img)
 
     test_img = normalize_and_flatten(test_img)
     
-    reinforce_data = np.zeros(shape=(LIMIT, SIZE*SIZE))
+    try:
+        reinforce_data = pickle.load(open(MEMORY, 'rb'))
+    except:    
+        reinforce_data = np.zeros(shape=(LIMIT, SIZE*SIZE))
     
     i = 2
     while i >= 0:
         pos, value = recognize_image(test_img, data, reinforce_data)
         pos = pos[0:NO_SIMILAR]
-        display_results(images, pos)
+        print pos
+#        display_results(images, pos)
         s = raw_input("Enter numbers of the images which are not similar(space seperated):").split()
         mismatch_list = [pos[int(x) - 1] for x in s]
         if len(mismatch_list) == 0:
             break
         reinforce_data = learn(test_img, data, reinforce_data, max(value), mismatch_list)
+        store_data(reinforce_data)
         i -= 1
         
 main()
