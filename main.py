@@ -11,6 +11,7 @@ SIZE = 100
 TOTAL_NO_IMAGES = 300
 NO_SIMILAR = 5
 MEMORY = 'memory_file.dat'
+RESULTS = 'results'
 
 #SEED_VALUE = 13
 #random.seed(SEED_VALUE)
@@ -122,6 +123,13 @@ def store_data(data):
     
     pickle.dump(data, open(MEMORY, 'wb'))
 
+def print_results(data):
+    
+    f = open(RESULTS, 'w')
+    data = [str(i) for i in data]
+    s = '\n'.join(data)
+    f.write(s)
+    
 def main():
     
     data, images = init()
@@ -145,7 +153,7 @@ def main():
     while i >= 0:
         pos, value = recognize_image(test_img, data, reinforce_data)
         pos = pos[0:NO_SIMILAR]
-        print pos
+        print_results(pos)
 #        display_results(images, pos)
         s = raw_input("Enter numbers of the images which are not similar(space seperated):").split()
         mismatch_list = [pos[int(x) - 1] for x in s]
