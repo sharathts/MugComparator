@@ -3,6 +3,7 @@ import numpy as np
 import random
 import cPickle as pickle
 import os
+import sys
 
 FOLDER = "data"
 LIMIT = 100 #limits the number of images to be considered as part of the database
@@ -133,12 +134,15 @@ def print_results(data):
 def main():
     
     data, images = init()
+        
+    test_img = cv2.imread(sys.argv[1])    
     
     #select random image to be test image
-    test_img = cv2.imread(FOLDER + "/" + str(random.randint(1, TOTAL_NO_IMAGES)) + ".jpg")
+#    test_img = cv2.imread(FOLDER + "/" + str(random.randint(1, TOTAL_NO_IMAGES)) + ".jpg")
+    
     test_img = preprocess(test_img)
     if test_img is None:
-#        print "Cannot recognize, no face found"
+        print "Cannot recognize, no face found"
         return
     cv2.imshow("test", test_img)
 
