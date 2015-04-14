@@ -4,22 +4,23 @@ import random
 import cPickle as pickle
 import os
 import sys
+from django import template 
 
-FOLDER = "data"
-LIMIT = 100 #limits the number of images to be considered as part of the database
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+
+FOLDER = "media"
+LIMIT = 30 #limits the number of images to be considered as part of the database
 SIZE = 100
 
-TOTAL_NO_IMAGES = 300
+TOTAL_NO_IMAGES = 1000
 NO_SIMILAR = 5
 MEMORY = 'memory_file.dat'
 RESULTS = 'results'
 
-#SEED_VALUE = 13
-#random.seed(SEED_VALUE)
-
-NAME = random.sample(range(1, TOTAL_NO_IMAGES), LIMIT)
+#NAME = random.sample(range(1, TOTAL_NO_IMAGES + 1), TOTAL_NO_IMAGES)
+NAME = range(1, LIMIT+1)
 NAME = [str(i) for i in NAME]
-CASC_PATH = 'lbpcascades/lbpcascade_frontalface.xml'#'haarcascades/haarcascade_frontalface_alt.xml'#
+CASC_PATH = 'lbpcascades/lbpcascade_frontalface.xml'#'haarcascades/haarcascade_frontalface_alt.xml'
 FACE_CASCADE = cv2.CascadeClassifier(CASC_PATH)
 
 def distance(x, y, z):
@@ -28,6 +29,7 @@ def distance(x, y, z):
     
     return sum(np.add(abs(np.subtract(x, y)), z))
 
+    
 def preprocess(image):
 
     """Converts the image to gray scale and also resizes the image"""
@@ -39,9 +41,14 @@ def preprocess(image):
     for (x,y,w,h) in faces:
         image = image[y:y+h, x:x+w]
     
-    if image is None or len(image) == 0:
-        return None
-    image = cv2.resize(image, (SIZE, SIZE))
+    if len(image) == 0 or image == []:
+        image = None
+    else:
+        try:
+            image = cv2.resize(image, (SIZE, SIZE))
+        except:
+            print image, "is the type of the image"
+            image = None
     return image
 
 def normalize_and_flatten(image):
@@ -59,12 +66,10 @@ def recognize_image(test_img, data, reinforce_data):
     
     global LIMIT
     #Finds the least distance between test image and the dataset
-    pos = range(LIMIT) # contains the indices of all the images in the database
+    pos = range(LIMIT - 1) # contains the indices of all the images in the database
     value = [] # will contain the mean square errors later
-    
     for i in range(len(pos)):
         value.append(distance(test_img, data[i], reinforce_data[i]))
-#        print i
         if i == 0:
             continue
         k = i
@@ -130,12 +135,41 @@ def print_results(data):
     data = [str(i) for i in data]
     s = '\n'.join(data)
     f.write(s)
+
+def render_images(pos, test_img_path):
+    
+    html = """<html>
+        <head><title>Similar images</title></head>
+
+        <body>
+        <h1 align="center">Test image</h1>
+        <p align="center"><img src="{{ test_image }}" alt="test image"></p>
+
+        <h1 align="center">Similar images</h1>
+
+        <ol>
+        {% for item in list %}
+            <li><img src="{{ item }}" alt="similar image" height="100" width="100"></li>
+            </br>
+        {% endfor %}
+        <ol>
+
+        </body>
+        </html>
+        """    
+    t = template.Template(html)
+    pos = [FOLDER + "/" + str(i + 1) + ".jpg" for i in pos]
+    c = template.Context({'list': pos, 'test_image': test_img_path})
+    html = t.render(c)
+    f = open(RESULTS + ".html", 'w')
+    f.write(html)
     
 def main():
     
     data, images = init()
-        
-    test_img = cv2.imread(sys.argv[1])    
+    
+    test_img_path = sys.argv[1]    
+    test_img = cv2.imread(test_img_path)    
     
     #select random image to be test image
 #    test_img = cv2.imread(FOLDER + "/" + str(random.randint(1, TOTAL_NO_IMAGES)) + ".jpg")
@@ -157,8 +191,7 @@ def main():
     while i >= 0:
         pos, value = recognize_image(test_img, data, reinforce_data)
         pos = pos[0:NO_SIMILAR]
-        print_results(pos)
-#        display_results(images, pos)
+        render_images(pos, test_img_path)
         s = raw_input("Enter numbers of the images which are not similar(space seperated):").split()
         mismatch_list = [pos[int(x) - 1] for x in s]
         if len(mismatch_list) == 0:
