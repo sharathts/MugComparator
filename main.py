@@ -8,7 +8,7 @@ from django import template
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
-FOLDER = "media"
+FOLDER = "data"
 LIMIT = 30 #limits the number of images to be considered as part of the database
 SIZE = 100
 
