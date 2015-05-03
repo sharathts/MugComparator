@@ -81,5 +81,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = '/home/vasanth/programming/MugComparator/media'
+#MEDIA_ROOT = '/home/vasanth/programming/MugComparator/media'
+MEDIA_ROOT = '/media/c19aea56-3b44-4118-a3ec-d9abc9b15801/programming/projects/MugComparator-1'
 MEDIA_URL = '/media/'
