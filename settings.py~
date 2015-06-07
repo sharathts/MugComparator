@@ -83,4 +83,4 @@ STATIC_URL = '/static/'
 
 #MEDIA_ROOT = '/home/vasanth/programming/MugComparator/media'
 MEDIA_ROOT = '/home/sharath/simfaces/'
-MEDIA_URL = '/home/'
+MEDIA_URL = '/media/'

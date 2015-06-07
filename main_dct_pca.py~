@@ -197,7 +197,6 @@ def pca_single_image(image_name, mean_vector, std_vector, U_reduce):
     if image is None:
         print "Couldn't load image"
         return False
-    print "test image = ", image
     image_array = transform(image)#image.ravel()
 #    print "charlie image", image_array
     normalised_image_array = (image_array - mean_vector) / std_vector
