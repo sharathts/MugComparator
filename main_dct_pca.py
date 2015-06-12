@@ -5,18 +5,18 @@ import cPickle as pickle
 import os
 import sys
 from django import template
-from scipy.linalg import eigh
-import scipy
-from numpy import *
-from pylab import *
-from cmath import *
-import imagehash
-from PIL import Image
-from skimage.measure import structural_similarity as ssim
+#from scipy.linalg import eigh
+#import scipy
+#from pylab import *
+#from cmath import *
+#import imagehash
+#from PIL import Image
+#from skimage.measure import structural_similarity as ssim
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
 FOLDER = "data"
+test_image_name = FOLDER + "/244" #Name or path of test image -> Omit .jpg(only .jpg)
 LIMIT = 423#1459 #limits the number of images to be considered as part of the database
 SIZE = 10 #size of reshaped faces
 count_useless_images = 0
@@ -186,7 +186,7 @@ def run_pca(data):
 #    show()
 
     transformed_data = np.dot(data_normalised, U_reduce)
-    return [transformed_data, mean_vector, std_vector, U_reduce]
+    return [transformed_data, mean_vector, std_vector, U_reduce, k]
 
 def pca_single_image(image_name, mean_vector, std_vector, U_reduce):
 
@@ -197,7 +197,7 @@ def pca_single_image(image_name, mean_vector, std_vector, U_reduce):
     if image is None:
         print "Couldn't load image"
         return False
-    print "test image = ", image
+#    print "test image = ", image
     image_array = transform(image)#image.ravel()
 #    print "charlie image", image_array
     normalised_image_array = (image_array - mean_vector) / std_vector
@@ -255,16 +255,16 @@ def render_images(pos, test_img_path):
 
         <body>
         <h1 align="center">Test image</h1>
-        <p align="center"><img src="{{ test_image }}" alt="test image"></p>
+        <p align="center"><img src="{{ test_image }}" alt="test image" height="250" width="250"></p>
 
         <h1 align="center">Similar images</h1>
 
         <ol>
         {% for item in list %}
-            <li><img src="{{ item }}" alt="similar image" height="100" width="100"></li>
+            <li><img src="{{ item }}" alt="similar image" height="250" width="250"></li>
             </br>
         {% endfor %}
-        <ol>
+        </ol>
 
         </body>
         </html>
@@ -277,9 +277,28 @@ def render_images(pos, test_img_path):
     f.write(html)
 
 
+def create_training_data(transformed_data):
+
+    """Reads a file and creates training vectors"""
+    
+    global K
+    filename = "train"
+    pickle_filename = "train.dat"
+    lines = open(filename, "r").readlines()
+    count = len(lines)
+#    Concatenated vectors
+    training_data = np.zeros((count, 2*K))
+    i = 0
+    for line in lines:
+        line = line.strip()
+        line = line.split('')
+        training_data[i] = np.concatenate((transformed_data[int(line[0]) - 1], transformed_data[int(line[1]) - 1]))
+        i += 1
+    pickle.dump(training_data, open(pickle_filename, 'wb'))
+    
 def main():
 
-    global NO_SIMILAR
+    global NO_SIMILAR, test_image_name
 #    for i in range(5):
 #        a = data[i,:].reshape(SIZE,SIZE)
 #        a = array(a)
@@ -294,26 +313,30 @@ def main():
 
 #    print "charlie", data[60,:]
     try:
-        [transformed_data, mean_vector, std_vector, U_reduce] = pickle.load(open(MEMORY, 'rb'))
+        [transformed_data, mean_vector, std_vector, U_reduce, k] = pickle.load(open(MEMORY, 'rb'))
         print "data found"
     except:    
         print "no data found"
         [data, images] = init()
-        [transformed_data, mean_vector, std_vector, U_reduce] = run_pca(data)
-        data = [transformed_data, mean_vector, std_vector, U_reduce]
+        [transformed_data, mean_vector, std_vector, U_reduce, k] = run_pca(data)
+        data = [transformed_data, mean_vector, std_vector, U_reduce, k]
         pickle.dump(data, open(MEMORY, 'wb'))
+
+    print "k is ", k
+#    create_training_data(transformed_data)
+    
 #    print "TD\n", transformed_data[:,0:5]
 #    print "charlie transforemed main", transformed_data[60,:]
 #    image_name = FOLDER + "/243"
-    image_name = FOLDER + "/352"
+    
 #    image_name = FOLDER + "/297"
 #    image_name = FOLDER + "/304"
 
-    transformed_image = pca_single_image(image_name, mean_vector, std_vector, U_reduce)
+    transformed_image = pca_single_image(test_image_name, mean_vector, std_vector, U_reduce)
 #    print "TI\n", transformed_image
 #    print "charlie transforemed", transformed_image
     pos, value = compare_images(transformed_image, transformed_data)
-    pos = array(pos)
+    pos = np.array(pos)
     pos += 1
     print "count", count_useless_images
     print "pos\n", pos[0:100]
@@ -322,14 +345,14 @@ def main():
     
 #    pos += 1
 #    print pos
-    test_img_path = image_name + ".jpg"
+    test_img_path = test_image_name + ".jpg"
 #    To create a html page
     render_images(pos, test_img_path)
     
-    for i in range(NO_SIMILAR):
-        figure()
-        my_image = imread(FOLDER + "/" + str(int(pos[i])) + ".jpg") 
-        imshow(flipud(my_image))
-        title(str(i + 1))
-    show()
+#    for i in range(NO_SIMILAR):
+#        figure()
+#        my_image = imread(FOLDER + "/" + str(int(pos[i])) + ".jpg") 
+#        imshow(flipud(my_image))
+#        title(str(i + 1))
+#    show()
 main()

@@ -1,16 +1,15 @@
 import cv2
 import numpy as np
 import random
-#import cPickle as pickle
+import cPickle as pickle
 #import os
 #import sys
-#from django import template
-from scipy.linalg import eigh
-import scipy
+from django import template
+#from scipy.fftpack import fft
 from numpy import *
 from pylab import *
 from cmath import *
-import imagehash
+#import imagehash
 from PIL import Image
 
 FOLDER = "data"
@@ -19,7 +18,7 @@ SIZE = 50 #size of reshaped faces
 count_useless_images = 0
 TOTAL_NO_IMAGES = 100
 NO_SIMILAR = 10
-MEMORY = 'memory_file.dat'
+MEMORY = 'memory_file_fft.dat'
 RESULTS = 'results'
 
 #List containing names of the images
@@ -77,9 +76,14 @@ def normalize_and_flatten(image):
     """Some normalization is applied on the image and then the image is converted into a row vector so that it can be dealt with easily"""
     
 #    image = image / 255.0 #For now, we apply a very naive method of normalization
-    image = image.ravel()
+#    m,n = image.shape
+#    FFT
+#    f = fft(image)
+#    magnitude
+#    mag = array([[(sum(f[i,j].real**2 + f[i,j].imag**2))**0.5 for j in range(n)] for i in range(m)]).astype('float32')
+#    image = mag.ravel()
 #    image -= image.mean()
-    return image
+    return image.ravel()
 
 def init():
 
@@ -98,7 +102,7 @@ def init():
 #        print img[50,50]
 #        cv2.imshow("face", img)
 #        cv2.waitKey(0)
-        data[itr] = img.ravel() #normalize_and_flatten(img)
+        data[itr] = normalize_and_flatten(img)
 #        k += 1
         data = np.array(data).astype('float32')
     return [data, images]
@@ -168,7 +172,7 @@ def pca_single_image(image_name, mean_vector, std_vector, U_reduce):
     if image is None:
         print "Couldn't load image"
         return False
-    image_array = image.ravel()
+    image_array = normalize_and_flatten(image)
 #    print "charlie image", image_array
     normalised_image_array = (image_array - mean_vector) / std_vector
     transformed_image_array = np.dot(normalised_image_array, U_reduce)
@@ -211,7 +215,6 @@ def compare_images(image, data):
 def main():
 
     global NO_SIMILAR
-    [data, images] = init()
 #    for i in range(5):
 #        a = data[i,:].reshape(SIZE,SIZE)
 #        a = array(a)
@@ -225,12 +228,20 @@ def main():
 #        print h
 
 #    print "charlie", data[60,:]
-    [transformed_data, mean_vector, std_vector, U_reduce] = run_pca(data)
+    try:
+        [transformed_data, mean_vector, std_vector, U_reduce] = pickle.load(open(MEMORY, 'rb'))
+        print "data found"
+    except:    
+        print "no data found"
+        [data, images] = init()
+        [transformed_data, mean_vector, std_vector, U_reduce] = run_pca(data)
+        data = [transformed_data, mean_vector, std_vector, U_reduce]
+        pickle.dump(data, open(MEMORY, 'wb'))
 #    print "TD\n", transformed_data[:,0:5]
 #    print "charlie transforemed main", transformed_data[60,:]
 #    The image to be compared with
 #    image_name = FOLDER + "/242"
-    image_name = FOLDER + "/303"
+    image_name = FOLDER + "/246"
     transformed_image = pca_single_image(image_name, mean_vector, std_vector, U_reduce)
 #    print "TI\n", transformed_image
 #    print "charlie transforemed", transformed_image
