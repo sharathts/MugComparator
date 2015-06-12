@@ -197,13 +197,13 @@ def pca_single_image(image_name, mean_vector, std_vector, U_reduce):
     image = preprocess(image, image_name)
     if image is None:
         print "Couldn't load image"
-        return False
+        return [False, 0]
 #    print "test image = ", image
     image_array = transform(image)#image.ravel()
 #    print "charlie image", image_array
     normalised_image_array = (image_array - mean_vector) / std_vector
     transformed_image_array = np.dot(normalised_image_array, U_reduce)
-    return transformed_image_array
+    return [transformed_image_array, 1]
     
 
 def distance(x, y):
@@ -251,6 +251,7 @@ def compare_images(image, data):
     
 def render_images(pos, test_img_path):
     
+    global RESULTS
     html = """<html>
         <head><title>Similar images</title></head>
 
@@ -299,7 +300,7 @@ def create_training_data(transformed_data):
     
 def main():
 
-    global NO_SIMILAR
+    global NO_SIMILAR, RESULTS
     test_img_path = sys.argv[1]
 #    for i in range(5):
 #        a = data[i,:].reshape(SIZE,SIZE)
@@ -334,27 +335,31 @@ def main():
 #    image_name = FOLDER + "/297"
 #    image_name = FOLDER + "/304"
 
-    transformed_image = pca_single_image(test_img_path, mean_vector, std_vector, U_reduce)
+    [transformed_image, flag] = pca_single_image(test_img_path, mean_vector, std_vector, U_reduce)
 #    print "TI\n", transformed_image
 #    print "charlie transforemed", transformed_image
-    pos, value = compare_images(transformed_image, transformed_data)
-    pos = np.array(pos)
-    pos += 1
-    print "count", count_useless_images
-    print "pos\n", pos[0:100]
-    print "value \n", value[0:100]
-    pos = pos[0:NO_SIMILAR]
-    
-#    pos += 1
-#    print pos
-    test_img_path = test_img_path
-#    To create a html page
-    render_images(pos, test_img_path)
-    
-#    for i in range(NO_SIMILAR):
-#        figure()
-#        my_image = imread(FOLDER + "/" + str(int(pos[i])) + ".jpg") 
-#        imshow(flipud(my_image))
-#        title(str(i + 1))
-#    show()
+    if flag != False:
+        pos, value = compare_images(transformed_image, transformed_data)
+        pos = np.array(pos)
+        pos += 1
+        print "count", count_useless_images
+        print "pos\n", pos[0:100]
+        print "value \n", value[0:100]
+        pos = pos[0:NO_SIMILAR]
+        
+    #    pos += 1
+    #    print pos
+        test_img_path = test_img_path
+    #    To create a html page
+        render_images(pos, test_img_path)
+        
+    #    for i in range(NO_SIMILAR):
+    #        figure()
+    #        my_image = imread(FOLDER + "/" + str(int(pos[i])) + ".jpg") 
+    #        imshow(flipud(my_image))
+    #        title(str(i + 1))
+    #    show()
+    else:
+        f = open(RESULTS + ".html", "w")
+        f.write("<h4>Sorry, couldn't load the input image. Try with a different one.</h3>'")
 main()
