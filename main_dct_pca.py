@@ -22,6 +22,7 @@ SIZE = 10 #size of reshaped faces
 count_useless_images = 0
 TOTAL_NO_IMAGES = 100
 NO_SIMILAR = 10
+
 MEMORY = 'memory_file.dat'
 RESULTS = 'results'
 K = 1
