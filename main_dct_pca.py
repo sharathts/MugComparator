@@ -16,7 +16,7 @@ from django import template
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
 
 FOLDER = "data"
-test_image_name = FOLDER + "/244" #Name or path of test image -> Omit .jpg(only .jpg)
+#test_image_name = FOLDER + "/244" #Name or path of test image -> Omit .jpg(only .jpg)
 LIMIT = 423#1459 #limits the number of images to be considered as part of the database
 SIZE = 10 #size of reshaped faces
 count_useless_images = 0
@@ -193,7 +193,7 @@ def pca_single_image(image_name, mean_vector, std_vector, U_reduce):
 
     """Function to perform pca on a single image"""
     
-    image = cv2.imread(image_name + ".jpg")
+    image = cv2.imread(image_name)
     image = preprocess(image, image_name)
     if image is None:
         print "Couldn't load image"
@@ -299,7 +299,8 @@ def create_training_data(transformed_data):
     
 def main():
 
-    global NO_SIMILAR, test_image_name
+    global NO_SIMILAR
+    test_img_path = sys.argv[1]
 #    for i in range(5):
 #        a = data[i,:].reshape(SIZE,SIZE)
 #        a = array(a)
@@ -333,7 +334,7 @@ def main():
 #    image_name = FOLDER + "/297"
 #    image_name = FOLDER + "/304"
 
-    transformed_image = pca_single_image(test_image_name, mean_vector, std_vector, U_reduce)
+    transformed_image = pca_single_image(test_img_path, mean_vector, std_vector, U_reduce)
 #    print "TI\n", transformed_image
 #    print "charlie transforemed", transformed_image
     pos, value = compare_images(transformed_image, transformed_data)
@@ -346,7 +347,7 @@ def main():
     
 #    pos += 1
 #    print pos
-    test_img_path = test_image_name + ".jpg"
+    test_img_path = test_img_path
 #    To create a html page
     render_images(pos, test_img_path)
     
