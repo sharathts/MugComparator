@@ -1,5 +1,5 @@
 # MugComparator
-Given a test image, obtains 5 similar images from the database. Also has reinforcement learning capability if the user points out that one of the faces is not in the group.
+Given a test image of a person, obtains 5 similar images from the database. Also has reinforcement learning capability if the user points out that one of the faces is not in the group.
 # Required Libraries
 1. Numpy
 2. OpenCV
